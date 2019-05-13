@@ -19,8 +19,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         //This gets called when the app gets loaded up, the first thing that happened before viewDidLoad
         
-        print(NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).last! as String)
-        
         return true
     }
 

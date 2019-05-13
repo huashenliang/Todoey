@@ -10,46 +10,56 @@ import UIKit
 
 class TodoListViewController: UITableViewController {
     
-   
-    var itemArray = ["Workout","Swift","Guitar"]
+    var itemArray = [Item]()
     
-    let defaults = UserDefaults.standard
+    //FileManager -> the object that provides an interface to the file system
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
         // Do any additional setup after loading the view, typically from a nib.
-        if let items = defaults.array(forKey: "TodoListArray") as? [String] {
-            itemArray = items
-        }
+        
+        loadItems()
     }
+    
     
     //MARK - Tableview Datasource Methods
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
         
-        cell.textLabel?.text = itemArray[indexPath.row]
+        let item = itemArray[indexPath.row]
+        
+        cell.textLabel?.text = item.title
+        
+        //Ternary operator
+        // value = condition ? valueIfTure : valueIfFalse
+        cell.accessoryType = item.done ? .checkmark : .none
+       
         return cell
     }
+    
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return itemArray.count
     }
     
+    
     //MARK - TableView Delegate Methods
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         // print("\(indexPath.row) : \(itemArray[indexPath.row])")
         
-        //grabbing a reference to the cell that is at a particular indexpath
-        if(tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark){
-            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-        }else{
-            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-        }
+        itemArray[indexPath.row].done = !itemArray[indexPath.row].done
+        
+        saveItems()
+        
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
-    //MARK - Add New Items
     
+    //MARK - Add New Items
     @IBAction func AddButtonPressed(_ sender: UIBarButtonItem) {
         
         var textField = UITextField()
@@ -63,11 +73,13 @@ class TodoListViewController: UITableViewController {
             if(textField.text == ""){
                 self.present(alertInput, animated: true, completion: nil)
             }else{
-                self.itemArray.append(textField.text!)
                 
-                self.defaults.set(self.itemArray, forKey: "TodoListArray")
+                let newItem = Item()
+                newItem.title = textField.text!
                 
-                self.tableView.reloadData()
+                self.itemArray.append(newItem)
+                
+                self.saveItems()
             }
         }
         
@@ -87,5 +99,32 @@ class TodoListViewController: UITableViewController {
         
     }
     
+    
+    func saveItems(){
+        let encoder = PropertyListEncoder()
+        
+        do {
+            let data = try encoder.encode(self.itemArray)
+            try data.write(to: dataFilePath!)
+            
+        }catch{
+            print("Error encoding item array, \(error)")
+        }
+        
+            tableView.reloadData()
+    }
+    
+    
+    func loadItems(){
+        
+        if let data = try? Data(contentsOf: dataFilePath!){
+            let decoder = PropertyListDecoder()
+            do{
+              try itemArray = decoder.decode([Item].self, from: data)
+            }catch{
+                print(error)
+            }
+        }
+    }
 }
 
